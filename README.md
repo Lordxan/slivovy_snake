@@ -175,10 +175,6 @@ make build-web
 make serve
 ```
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
 ## Repository
 
 [https://github.com/Lordxan/slivovy-snake](https://github.com/Lordxan/slivovy-snake)
