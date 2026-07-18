@@ -1,0 +1,21 @@
+pub mod collision;
+pub mod food;
+pub mod game;
+pub mod game_events;
+pub mod game_flow;
+pub mod input;
+pub mod particle;
+pub mod rendering;
+pub mod snake;
+pub mod ui;
+
+pub use collision::CollisionPlugin;
+pub use food::FoodPlugin;
+pub use game::GameCorePlugin;
+pub use game_events::GameEventsPlugin;
+pub use game_flow::GameFlowPlugin;
+pub use input::InputPlugin;
+pub use particle::ParticlePlugin;
+pub use rendering::RenderingPlugin;
+pub use snake::SnakePlugin;
+pub use ui::UIPlugin;

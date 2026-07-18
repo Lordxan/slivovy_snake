@@ -1,0 +1,28 @@
+[package]
+name = "slivovy_snake"
+version = "0.1.0"
+edition = "2021"
+description = "A Snake game built with Rust and Bevy, targeting WebAssembly"
+repository = "https://github.com/Lordxan/slivovy-snake"
+keywords = ["game", "snake", "bevy", "wasm", "web"]
+categories = ["games", "wasm"]
+
+[dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+rand = "0.9"
+web-sys = { version = "0.3", features = ["Storage"] }
+wasm-bindgen = "0.2.126"
+
+[dependencies.bevy]
+version = "0.18"
+features = [
+  "webgl2",
+  "2d"
+]
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
