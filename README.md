@@ -1,127 +1,184 @@
-# slivovy_snake
+# Slivovy Snake
 
-A Snake game built with **Rust** and **Bevy**, targeting **WebAssembly** for the web.
+A classic Snake game built with **Rust** and [Bevy](https://bevyengine.org/) game engine, compiled to **WebAssembly** for native browser gameplay.
 
-## Tech Stack
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Rust](https://img.shields.io/badge/Rust-2021%2B-blue)
+![Bevy](https://img.shields.io/badge/Bevy-0.18-005a8d)
+![Platform](https://img.shields.io/badge/platform-Web%2FWebAssembly-green)
 
-- **Rust** (2021 edition)
-- **Bevy** 0.18.x — ECS-based game engine with **WebGL2** renderer
-- **WebAssembly** (wasm32-unknown-unknown) — web deployment target
-- **wasm-pack** — builds the game to WebAssembly
+## Features
 
-## Browser Compatibility
+- 🐍 **Classic Snake gameplay** on a 20×20 grid
+- 🎮 **Smooth WASM-based rendering** with WebGL2 support
+- ⚡ **Progressive speed increase** as you eat food
+- 💾 **Persistent high scores** stored in browser local storage
+- ✨ **Particle effects** for visual feedback
+- 🎨 **Minimal dark aesthetic** with a retro-modern feel
 
-The game uses the **WebGL2** renderer, providing broad browser support:
+## Architecture
 
-| Browser  | Version |
-|----------|---------|
-| Chrome   | 56+     |
-| Firefox  | 27+     |
-| Edge     | 79+     |
-| Safari   | 12+     |
-| Opera    | 43+     |
+The project follows Bevy's ECS (Entity Component System) plugin-based architecture:
 
-WebGL2 is supported on virtually all modern desktop and mobile browsers, including iOS Safari and Android Chrome.
+| Module | Description |
+|--------|-------------|
+| `core` | Constants, utilities, and global state |
+| `plugins/snake` | Snake movement, growth, and life cycle |
+| `plugins/input` | Keyboard input handling (WASD / Arrow keys) |
+| `plugins/rendering` | Canvas rendering pipeline |
+| `plugins/collision` | Wall boundaries and self-collision detection |
+| `plugins/food` | Food spawning and consumption |
+| `plugins/particle` | Particle effect system |
+| `plugins/game_events` | Game state transitions |
+| `plugins/game_flow` | Start, pause, and game-over flow |
+| `plugins/ui` | HUD, score, and game-over overlays |
 
-## Requirements
+## Prerequisites
 
-- Rust toolchain (rustc 1.80+)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/) — for web builds
-
-## Quick Start
+- **Rust** (rustc 1.74+)
+- **cargo**
+- **wasm-bindgen** CLI tool
 
 ```bash
-# Build the game to WebAssembly
+# Install wasm-bindgen if missing
+cargo install wasm-bindgen-cli
+```
+
+## Building
+
+### Development build (native — for testing logic)
+
+```bash
+cargo run
+```
+
+### Web / WebAssembly build
+
+```bash
+# Using Makefile (recommended)
 make build-web
 
-# Serve the game locally
-make serve
-```
-
-Then open **http://localhost:8080** in your browser.
-
-## Build
-
-### One-command build (recommended)
-
-```bash
-make build-web
-```
-
-This runs `wasm-pack build --target web --out-dir pkg` which:
-1. Compiles the game to `wasm32-unknown-unknown`
-2. Generates JS glue code via `wasm-bindgen`
-3. Outputs everything to `pkg/`
-
-### Manual build
-
-```bash
-wasm-pack build --target web --out-dir pkg
-```
-
-### With cargo (raw wasm)
-
-```bash
+# Manual steps
+rustup target add wasm32-unknown-unknown
 cargo build --release --target wasm32-unknown-unknown
-# Output: target/wasm32-unknown-unknown/release/slivovy_snake.wasm
+wasm-bindgen --no-typescript --target web \
+  --out-dir ./web/pkg --out-name "slivovy_snake" \
+  ./target/wasm32-unknown-unknown/release/slivovy_snake.wasm
 ```
 
-## Run Locally
+## Running
 
-### Option A: Python HTTP server
+### Local development server
 
 ```bash
+# Using Makefile
 make serve
-# or:
-python3 -m http.server 8080 --directory web
+# Opens http://localhost:8080
+
+# Or manually
+cd web
+python3 -m http.server 8080
 ```
 
-### Option B: Node.js serve
+### Deploy to web
 
-```bash
-npx serve web -p 8080
+The compiled output lives in `web/pkg/`. These files can be served by any static HTTP server (Nginx, GitHub Pages, Cloudflare Pages, Vercel, etc.).
+
+## Controls
+
+| Action | Key |
+|--------|-----|
+| Move | **Arrow Keys** or **WASD** |
+| Restart | (on game over) |
+
+## Configuration
+
+Key constants can be adjusted in `src/core/constants.rs`:
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `GRID_WIDTH` | 20 | Grid width in tiles |
+| `GRID_HEIGHT` | 20 | Grid height in tiles |
+| `MOVEMENT_INTERVAL` | 100ms | Base tick rate |
+| `MIN_MOVEMENT_INTERVAL` | 50ms | Fastest possible tick rate |
+| `SPEED_STEP_FOODS` | 5 | Food eaten before speed-up |
+| `SPEED_STEP_MILLIS` | 8 | Ms subtracted per speed-up |
+| `TILE_SIZE` | 32px | Tile pixel size |
+
+## Build Pipeline
+
 ```
-
-### Option C: Custom script
-
-```bash
-./server.sh 8080
-```
-
-### Option D: Rust basic-http-server
-
-```bash
-cargo install basic-http-server
-basic-http-server web/
+┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
+│  Rust Source │───▶│  Cargo (wasm32)  │───▶│    .wasm     │
+└──────────────┘     └──────────────────┘     └──────┬───────┘
+                                                      │
+                                              wasm-bindgen
+                                                      │
+                                                      ▼
+                                               ┌──────────────┐
+                                               │  web/pkg/    │
+                                               │  (JS + Wasm) │
+                                               └──────┬───────┘
+                                                      │
+                                              Serve via HTTP
+                                                      │
+                                                      ▼
+                                               ┌──────────────┐
+                                               │   Browser    │
+                                               │   (Player)   │
+                                               └──────────────┘
 ```
 
 ## Project Structure
 
 ```
-slivovy_snake/
-├── Cargo.toml              # Package + library config (cdylib, rlib)
-├── Makefile                # Build + serve commands
-├── README.md               # This file
-├── server.sh               # Simple HTTP server script
-├── .cargo/
-│   └── config.toml         # Default wasm32-unknown-unknown target
-├── web/
-│   ├── index.html          # HTML entry point
-│   └── index.js            # JS loader (backwards compat)
+snake-slivovy/
+├── Cargo.toml              # Rust project manifest
+├── Makefile                # Build & serve automation
 ├── src/
-│   ├── main.rs             # Thin wrapper — calls slivovy_snake::main()
-│   ├── lib.rs              # Library entry point (used by wasm-pack)
-│   ├── game.rs             # Game logic + visual sync systems
-│   ├── spawn.rs            # Entity spawning (camera, grid, snake, food)
-│   └── input.rs            # Keyboard input handling
-└── target/
-    └── wasm32-unknown-unknown/  # WebAssembly build output
+│   ├── main.rs             # Application entry point
+│   ├── core/               # Core modules & constants
+│   │   ├── constants.rs    # Grid, colors, timing
+│   │   ├── global.rs       # Global state
+│   │   ├── mod.rs
+│   │   └── utils.rs        # Helpers
+│   └── plugins/            # Bevy plugins (game systems)
+│       ├── mod.rs
+│       ├── collision.rs
+│       ├── food.rs
+│       ├── game_events.rs
+│       ├── game_flow.rs
+│       ├── game.rs
+│       ├── input.rs
+│       ├── particle.rs
+│       ├── rendering.rs
+│       ├── snake.rs
+│       └── ui.rs
+└── web/
+    ├── index.html          # Entry HTML
+    └── pkg/                # [build output] WASM + JS bindings
 ```
 
-## Rendering Architecture
+## Development
 
-- **20x20 grid** with 32px tiles rendered as a dark green background with subtle grid lines
-- **Snake** as colored rectangles — bright green head (1.15x scale) and green body (0.92x scale)
-- **Food** as a red square with custom size
-- **Visuals sync** locked to the 100ms movement tick rate for smooth, deterministic updates
-- **WebGL2** renderer via Bevy's `webgl2` feature — compatible with Chrome, Firefox, Edge, Safari, and Opera
+```bash
+# Run native build for fast iteration
+cargo run
+
+# Watch mode (rebuilds on source changes)
+cargo run -- --nocapture
+
+# Build web target
+make build-web
+
+# Serve web build
+make serve
+```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Repository
+
+[https://github.com/Lordxan/slivovy-snake](https://github.com/Lordxan/slivovy-snake)
