@@ -1,0 +1,5 @@
+# Cargo configuration for web builds
+# This file is intentionally empty for wasm-pack builds.
+# wasm-pack handles the wasm32-unknown-unknown target.
+[build]
+target = "wasm32-unknown-unknown"
