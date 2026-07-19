@@ -86,7 +86,7 @@
         import init from "./pkg/slivovy_snake.js";
         init();
     </script>
-    <button id="toggle-iframe-btn">Hide Background</button>
+    <button id="toggle-iframe-btn">Expand game</button>
     <script>
         // Ensure canvas is visible behind iframe by dynamically adjusting z-index
         (function() {
@@ -105,18 +105,18 @@
             
             // Track canvas visibility state
             let canvasVisible = true;
-            
+
             // Toggle canvas visibility on button click
             toggleBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 canvasVisible = !canvasVisible;
-                
+
                 if (canvasVisible) {
                     canvas.style.display = 'block';
-                    toggleBtn.textContent = 'Collapse Canvas';
+                    toggleBtn.textContent = 'Collapse game';
                 } else {
                     canvas.style.display = 'none';
-                    toggleBtn.textContent = 'Expand Canvas';
+                    toggleBtn.textContent = 'Expand game';
                 }
             });
         })();
