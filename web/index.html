@@ -73,6 +73,68 @@
         #toggle-iframe-btn:hover {
             background: rgba(0, 255, 60, 0.2);
         }
+
+        /* Mobile joystick controls */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            display: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        #joystick-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 2px solid rgba(0, 255, 100, 0.4);
+            border-radius: 50%;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 35% 35%, rgba(100, 255, 120, 0.9), rgba(0, 180, 60, 0.85));
+            border: 2px solid rgba(150, 255, 150, 0.6);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 12px rgba(0, 255, 60, 0.3);
+            transition: none;
+        }
+
+        #controls-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            color: #8f8;
+            border: 1px solid #8f8;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background 0.2s;
+        }
+
+        #controls-toggle:hover {
+            background: rgba(0, 255, 60, 0.2);
+        }
+
+        @media (max-width: 768px), (hover: none) {
+            #mobile-controls {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
@@ -87,8 +149,18 @@
         init();
     </script>
     <button id="toggle-iframe-btn">Expand game</button>
+
+    <!-- Mobile joystick controls -->
+    <div id="mobile-controls">
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+    </div>
+
+    <button id="controls-toggle">Controls: OFF</button>
+
     <script>
-        // Ensure canvas is visible behind iframe by dynamically adjusting z-index
+        // --- Canvas visibility toggle ---
         (function() {
             const canvas = document.getElementById('game');
             const iframe = document.getElementById('background-iframe');
@@ -118,6 +190,136 @@
                     canvas.style.display = 'none';
                     toggleBtn.textContent = 'Expand game';
                 }
+            });
+        })();
+
+        // --- Virtual joystick stick: map drag direction to keyboard events for Bevy ---
+        (function() {
+            const container = document.getElementById('joystick-container');
+            const knob = document.getElementById('joystick-knob');
+            const controls = document.getElementById('mobile-controls');
+            const controlsToggle = document.getElementById('controls-toggle');
+            const canvas = document.getElementById('game');
+            let controlsVisible = true;
+
+            const MAX_OFFSET = 50; // max px the knob can travel from center
+            let dragging = false;
+            let activeKey = null; // currently held key direction
+            let startKey = null;  // key that was held at drag start (for space/enter to start)
+
+            const keyMap = {
+                'up':     { key: 'ArrowUp',    code: 'ArrowUp',    which: 38  },
+                'down':   { key: 'ArrowDown',  code: 'ArrowDown',  which: 40 },
+                'left':   { key: 'ArrowLeft',  code: 'ArrowLeft',  which: 37 },
+                'right':  { key: 'ArrowRight', code: 'ArrowRight', which: 39 },
+            };
+
+            function dispatchKey(type, info) {
+                const event = new KeyboardEvent(type, {
+                    key: info.key,
+                    code: info.code,
+                    keyCode: info.which,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                canvas.dispatchEvent(event);
+            }
+
+            function setDirection(dir) {
+                if (dir === activeKey) return;
+                // release old
+                if (activeKey && keyMap[activeKey]) {
+                    dispatchKey('keyup', keyMap[activeKey]);
+                }
+                activeKey = dir;
+                if (dir && keyMap[dir]) {
+                    dispatchKey('keydown', keyMap[dir]);
+                }
+            }
+
+            function resetDirection() {
+                if (activeKey && keyMap[activeKey]) {
+                    dispatchKey('keyup', keyMap[activeKey]);
+                }
+                activeKey = null;
+            }
+
+            function handleMove(clientX, clientY) {
+                const rect = container.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const dx = clientX - centerX;
+                const dy = clientY - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const radius = rect.width / 2;
+
+                // Clamp knob position
+                const clampedDist = Math.min(dist, radius - 30);
+                const angle = Math.atan2(dy, dx);
+                const kx = Math.cos(angle) * clampedDist;
+                const ky = Math.sin(angle) * clampedDist;
+                knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+                // Determine direction quadrant
+                const threshold = 0.4; // radians ~23 degrees from axis
+                let dir = null;
+                if (dist > 15) { // dead zone
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                        dir = dy < 0 ? 'up' : 'down';
+                    } else {
+                        dir = dx < 0 ? 'left' : 'right';
+                    }
+                }
+                setDirection(dir);
+            }
+
+            // Touch events
+            container.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                dragging = true;
+                const t = e.touches[0];
+                handleMove(t.clientX, t.clientY);
+            }, { passive: false });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!dragging) return;
+                e.preventDefault();
+                const t = e.touches[0];
+                handleMove(t.clientX, t.clientY);
+            }, { passive: false });
+
+            function stopDrag() {
+                if (!dragging) return;
+                dragging = false;
+                resetDirection();
+                knob.style.transform = 'translate(-50%, -50%)';
+            }
+
+            container.addEventListener('touchend', stopDrag);
+            container.addEventListener('touchcancel', stopDrag);
+
+            // Mouse events for desktop testing
+            container.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                dragging = true;
+                handleMove(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                handleMove(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('mouseup', stopDrag);
+
+            // Controls toggle
+            controlsToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                controlsVisible = !controlsVisible;
+                controlsToggle.parentElement !== null && (
+                    controls.style.display = controlsVisible ? 'flex' : 'none',
+                    controlsToggle.textContent = controlsVisible ? 'Controls: ON' : 'Controls: OFF'
+                );
             });
         })();
     </script>
