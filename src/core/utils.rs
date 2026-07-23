@@ -38,7 +38,7 @@ pub fn set_local_storage_value(key: &str, value: &str) {
 
 pub fn random_food_position(snake_segments: &[Vec2]) -> Vec2 {
     let mut rng = rand::rng();
-    let margin = TILE_SIZE * 0.5;
+    let margin = TILE_SIZE * 3.;
     let spacing = SEGMENT_SPACING * 0.8;
     loop {
         let pos = Vec2::new(
